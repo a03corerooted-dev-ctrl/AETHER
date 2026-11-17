@@ -1,6 +1,7 @@
 add_library(aether_core STATIC
   src/engine.cpp src/observation.cpp src/procfs_reader.cpp
   src/policy.cpp src/failsafe_gate.cpp src/event_log.cpp src/supervisor.cpp
+  src/runtime_agent_abi.cpp
 )
 target_include_directories(aether_core PUBLIC include)
 target_compile_features(aether_core PUBLIC cxx_std_17)
