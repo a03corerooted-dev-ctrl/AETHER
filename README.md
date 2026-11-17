@@ -24,6 +24,7 @@ The repository currently includes:
 - Bounded /proc process enumeration with RSS, anonymous/file/shmem RSS, swap, UID, state, and oom_score_adj where readable.
 - AETHER Core pressure bands (normal, moderate, high, critical) with immediate escalation and sample-based hysteresis on recovery.
 - A file-cache-only reclaim planner that emits a bounded proposal only when a future platform adapter explicitly confirms cgroup v2, memory.reclaim, swappiness=0 support, an authorized target, and a reclaimable estimate.
+- Versioned, bounds-checked C ABI groundwork for a future optional in-process agent; it is not yet linked into LMKD.
 - Host-side tests and ARM64 build CI.
 - Manager-hosted static WebUI snapshots. The WebUI remains observational.
 

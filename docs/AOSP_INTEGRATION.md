@@ -115,8 +115,11 @@ actual target binary and its security/runtime constraints.
 
 ## Current implementation status
 
-Serenity 0.9.2 does not yet include this source adapter, the Runtime Agent ABI,
-or the LMKD decision bridge. The module is still observation-only and keeps
-`LMKD_FALLBACK`. This document records the implementation direction and the
-upstream source findings; it does not claim that integration is already built
-or tested.
+The repository contains a versioned, bounds-checked C-compatible Runtime Agent
+ABI foundation, but no Runtime Agent implementation linked into LMKD, no AOSP
+source adapter, and no LMKD decision bridge. The module remains observation-
+and planning-only; no policy authority is transferred to AETHER on-device.
+The legacy Fail Safe Gate is a host-tested state machine and is not connected
+to LMKD's real decision path. This document records optional integration
+research and upstream source findings; it does not claim that integration is
+already built or tested.
