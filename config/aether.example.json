@@ -1,38 +1,38 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "engine": {
-    "mode": "observe",
     "enabled": true,
-    "policy_authority": "aether_when_runtime_agent_verified"
+    "mode": "observe_only",
+    "policy_authority": "aether_core_decisions_without_execution"
   },
   "supervisor": {
-    "bind_address": "127.0.0.1",
-    "port": 8765,
     "sampling_interval_ms": 1000,
     "max_process_observations": 128
   },
-  "failsafe_gate": {
-    "default_authority": "LMKD_FALLBACK",
-    "heartbeat_timeout_ms": 3000,
-    "require_agent": true,
-    "require_integrity": true,
-    "require_policy_ready": true,
-    "require_hook_backend": true,
-    "require_watchdog": true
+  "core_policy": {
+    "moderate_available_ratio": 0.15,
+    "high_available_ratio": 0.10,
+    "critical_available_ratio": 0.05,
+    "moderate_psi_some_avg10": 1.0,
+    "high_psi_some_avg10": 5.0,
+    "critical_psi_some_avg10": 10.0,
+    "moderate_psi_full_avg10": 0.10,
+    "high_psi_full_avg10": 1.0,
+    "critical_psi_full_avg10": 5.0,
+    "recovery_available_margin": 0.02,
+    "recovery_psi_margin": 0.50,
+    "recovery_samples": 2,
+    "max_observation_age_ms": 5000,
+    "target_available_ratio": 0.15,
+    "max_reclaim_per_cycle_kib": 65536
   },
-  "hooks": {
-    "primary": "ShadowHook",
-    "secondary": "Dobby",
-    "enabled": false,
-    "require_target_evidence": true
-  },
-  "policy": {
-    "available_ratio_warning": 0.12,
-    "available_ratio_critical": 0.05,
-    "psi_some_avg10_warning": 2.0,
-    "psi_some_avg10_critical": 10.0,
-    "psi_full_avg10_warning": 1.0,
-    "psi_full_avg10_critical": 5.0
+  "platform_adapters": {
+    "procfs": "read_only",
+    "psi": "feature_detect",
+    "cgroup_v2": "inspect_only",
+    "memory_reclaim": "disabled",
+    "zram": "telemetry_only",
+    "damon": "disabled"
   },
   "diagnostics": {
     "log_level": "info",

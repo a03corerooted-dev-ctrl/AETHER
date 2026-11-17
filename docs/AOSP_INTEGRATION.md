@@ -1,3 +1,7 @@
+# Optional AOSP LMKD integration research
+
+> **Architecture status:** This is an exploratory integration study, not a requirement for AETHER Core. The current project direction is an independent memory-management core with capability-detected platform adapters. No LMKD takeover, hook installation, or runtime injection is active. Any requirement below applies only if this optional integration path is deliberately pursued in a later milestone.
+
 # AETHER AOSP LMKD integration
 
 ## Source baseline
@@ -48,7 +52,7 @@ that particular kill should be skipped. The no-candidates callback is also a
 notification, not a replacement for candidate selection. Neither callback
 gives AETHER sole ownership of LMKD's policy.
 
-## Required source-level AETHER adapter
+## Possible future source-level adapter
 
 AETHER must add a dedicated, versioned decision bridge to the AOSP LMKD source.
 The bridge is invoked from the memory-pressure decision path before the normal

@@ -7,6 +7,8 @@ namespace aether {
 struct MemorySnapshot final {
     std::uint64_t monotonic_timestamp_ns{0};
     std::optional<std::uint64_t> total_kib, available_kib, free_kib, buffers_kib, cached_kib, swap_total_kib, swap_free_kib;
+    std::optional<std::uint64_t> active_anon_kib, inactive_anon_kib, active_file_kib, inactive_file_kib;
+    std::optional<std::uint64_t> dirty_kib, writeback_kib, slab_reclaimable_kib, shmem_kib;
 };
 struct PressureAverage final {
     double avg10{0.0}, avg60{0.0}, avg300{0.0};
@@ -20,6 +22,7 @@ struct ProcessObservation final {
     std::optional<std::uint32_t> uid;
     std::string name;
     std::optional<std::uint64_t> rss_kib;
+    std::optional<std::uint64_t> rss_anon_kib, rss_file_kib, rss_shmem_kib, swap_kib;
     std::optional<std::int32_t> oom_score_adj;
     std::optional<char> state;
 };

@@ -21,6 +21,14 @@ std::string trim(std::string value) {
     const auto last=value.find_last_not_of(" \t\r\n");
     return value.substr(first,last-first+1U);
 }
+bool parse_kib_value(const std::string& value, std::uint64_t& output) {
+    std::istringstream in(value);
+    std::uint64_t parsed = 0;
+    std::string unit;
+    if (!(in >> parsed >> unit) || unit != "kB") return false;
+    output = parsed;
+    return true;
+}
 bool read_process(const std::filesystem::path& dir,ProcessObservation& p) {
     std::ifstream status(dir/"status");
     if(!status) return false;
@@ -29,19 +37,19 @@ bool read_process(const std::filesystem::path& dir,ProcessObservation& p) {
         const auto colon=line.find(':');
         if(colon==std::string::npos) continue;
         const auto key=std::string_view(line).substr(0,colon);
-        auto value=trim(line.substr(colon+1U));
+        const auto value=trim(line.substr(colon+1U));
+        std::uint64_t amount = 0;
         if(key=="Name") p.name=value;
         else if(key=="State" && !value.empty()) p.state=value.front();
         else if(key=="Uid") {
             std::istringstream in(value);
             std::uint64_t uid=0;
             if(in>>uid && uid<=UINT32_MAX) p.uid=static_cast<std::uint32_t>(uid);
-        } else if(key=="VmRSS") {
-            std::istringstream in(value);
-            std::uint64_t rss=0;
-            std::string unit;
-            if(in>>rss>>unit && unit=="kB") p.rss_kib=rss;
-        }
+        } else if(key=="VmRSS" && parse_kib_value(value, amount)) p.rss_kib=amount;
+        else if(key=="RssAnon" && parse_kib_value(value, amount)) p.rss_anon_kib=amount;
+        else if(key=="RssFile" && parse_kib_value(value, amount)) p.rss_file_kib=amount;
+        else if(key=="RssShmem" && parse_kib_value(value, amount)) p.rss_shmem_kib=amount;
+        else if(key=="VmSwap" && parse_kib_value(value, amount)) p.swap_kib=amount;
     }
     std::ifstream adj(dir/"oom_score_adj");
     std::string adj_text;

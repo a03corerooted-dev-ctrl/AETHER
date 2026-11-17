@@ -4,10 +4,15 @@
 int main() {
     constexpr std::string_view meminfo =
         "MemTotal: 8192000 kB\nMemFree: 512000 kB\nMemAvailable: 4096000 kB\n"
-        "Buffers: 64000 kB\nCached: 1024000 kB\nSwapTotal: 2048000 kB\nSwapFree: 1536000 kB\n";
+        "Buffers: 64000 kB\nCached: 1024000 kB\nSwapTotal: 2048000 kB\nSwapFree: 1536000 kB\n"
+        "Active(anon): 512000 kB\nInactive(anon): 256000 kB\nActive(file): 128000 kB\n"
+        "Inactive(file): 64000 kB\nDirty: 1200 kB\nWriteback: 256 kB\nSReclaimable: 32000 kB\nShmem: 16000 kB\n";
     const auto memory = aether::parse_meminfo(meminfo);
     assert(memory && memory.value.total_kib == 8192000U);
     assert(memory.value.available_kib == 4096000U && memory.value.swap_free_kib == 1536000U);
+    assert(memory.value.active_anon_kib == 512000U);
+    assert(memory.value.inactive_file_kib == 64000U);
+    assert(memory.value.slab_reclaimable_kib == 32000U);
     const auto pressure = aether::parse_pressure_line("some avg10=0.25 avg60=0.10 avg300=0.02 total=123456");
     assert(pressure && pressure.value.avg10 > 0.24 && pressure.value.avg10 < 0.26);
     assert(pressure.value.total_us == 123456U);

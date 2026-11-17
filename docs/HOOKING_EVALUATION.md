@@ -1,6 +1,8 @@
-# AETHER LMKD integration evaluation
+# Optional LMKD hooking research
 
-## Primary: AOSP source-level integration
+> **Architecture status:** Runtime hooks are not part of AETHER Core v1 and are not needed by the independent memory model, policy engine, or reclaim planner. This document records an optional future integration study only. Hooking remains disabled, target-specific, and non-universal.
+
+## If LMKD integration is later pursued: AOSP source-level path
 
 The canonical integration target is the AOSP source project
 `platform/system/memory/lmkd`. This avoids treating OEM-specific binary
@@ -22,7 +24,7 @@ enabled. Without that build configuration, the header supplies no-op inline
 definitions. This is a source/build integration point, not a runtime plugin
 loader.
 
-### Required AETHER extension
+### Possible future AETHER extension
 
 The existing hook surface is not sufficient for AETHER's exclusive-authority
 contract. AETHER needs a dedicated source-level decision bridge before the

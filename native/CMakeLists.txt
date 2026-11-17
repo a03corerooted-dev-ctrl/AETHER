@@ -1,5 +1,5 @@
 add_library(aether_core STATIC
-  src/engine.cpp src/observation.cpp src/procfs_reader.cpp
+  src/engine.cpp src/core_engine.cpp src/observation.cpp src/procfs_reader.cpp
   src/policy.cpp src/failsafe_gate.cpp src/event_log.cpp src/supervisor.cpp
   src/runtime_agent_abi.cpp
 )

@@ -55,7 +55,10 @@ MemoryParseResult parse_meminfo(std::string_view input) {
         const auto number_token = take_token(rest);
         if (number_token.empty()) continue;
         const bool known = key == "MemTotal" || key == "MemAvailable" || key == "MemFree" || key == "Buffers" ||
-                           key == "Cached" || key == "SwapTotal" || key == "SwapFree";
+                           key == "Cached" || key == "SwapTotal" || key == "SwapFree" ||
+                           key == "Active(anon)" || key == "Inactive(anon)" || key == "Active(file)" ||
+                           key == "Inactive(file)" || key == "Dirty" || key == "Writeback" ||
+                           key == "SReclaimable" || key == "Shmem";
         std::uint64_t number = 0;
         if (!parse_u64(number_token, number)) {
             if (known) { result.error = ParseError::invalid_number; return result; }
@@ -76,6 +79,14 @@ MemoryParseResult parse_meminfo(std::string_view input) {
         else if (key == "Cached") assigned = assign(result.value.cached_kib);
         else if (key == "SwapTotal") assigned = assign(result.value.swap_total_kib);
         else if (key == "SwapFree") assigned = assign(result.value.swap_free_kib);
+        else if (key == "Active(anon)") assigned = assign(result.value.active_anon_kib);
+        else if (key == "Inactive(anon)") assigned = assign(result.value.inactive_anon_kib);
+        else if (key == "Active(file)") assigned = assign(result.value.active_file_kib);
+        else if (key == "Inactive(file)") assigned = assign(result.value.inactive_file_kib);
+        else if (key == "Dirty") assigned = assign(result.value.dirty_kib);
+        else if (key == "Writeback") assigned = assign(result.value.writeback_kib);
+        else if (key == "SReclaimable") assigned = assign(result.value.slab_reclaimable_kib);
+        else if (key == "Shmem") assigned = assign(result.value.shmem_kib);
         if (!assigned) { result.error = ParseError::duplicate_field; return result; }
     }
     if (!result.value.total_kib || *result.value.total_kib == 0U) {

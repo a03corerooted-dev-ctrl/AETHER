@@ -34,3 +34,6 @@ This is not an LMKD takeover build. It does not install ShadowHook or Dobby,
 inject into LMKD, alter LMKD policy, kill processes, or write kernel memory
 controls. LMKD remains unmodified and in service. A production takeover
 requires an audited in-process Runtime Agent and device-tested Fail Safe Gate handoff.
+
+
+The example policy file is a reference schema for the Core policy values. Runtime JSON configuration loading is not wired into the current Supervisor yet; the active host defaults are constructed through CoreConfig in native code.

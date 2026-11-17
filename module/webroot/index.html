@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><title>AETHER · Serenity 0.9.2</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><title>AETHER · Core Engine</title>
 <style>
 :root{font-family:Inter,system-ui,sans-serif;color:#e8edf5;background:#0b1018;--line:#263446;--muted:#91a0b4;--accent:#8ac7ff}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 85% -20%,#1c3650 0,transparent 42%),#0b1018}
@@ -15,18 +15,18 @@ tbody tr:last-child td{border:0}.scroll{overflow:auto;max-height:330px}.events{d
 .error{color:#ffb4a9}.ok{color:#9be2b0}
 @media(max-width:760px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.wide{grid-column:span 2}.top{align-items:flex-start;flex-direction:column}.event{grid-template-columns:68px 52px 1fr}}
 </style></head><body><main>
-<header class="top"><div><div class="brand">AETHER <span style="color:var(--accent)">/</span> SERENITY</div><div class="sub">Native memory observer · version 0.9.2</div></div><div class="pill status"><span class="dot"></span><span id="authority">CONNECTING</span></div></header>
+<header class="top"><div><div class="brand">AETHER <span style="color:var(--accent)">/</span> CORE</div><div class="sub">Independent Android memory engine · Core v1</div></div><div class="pill status"><span class="dot"></span><span id="authority">CONNECTING</span></div></header>
 <section class="grid">
 <article class="card"><div class="label">Memory available</div><div class="value" id="available">—</div><div class="unit" id="availablePct">waiting for manager bridge</div></article>
 <article class="card"><div class="label">Total RAM</div><div class="value" id="total">—</div><div class="unit">physical memory reported by procfs</div></article>
 <article class="card"><div class="label">Swap free</div><div class="value" id="swap">—</div><div class="unit">swap / zRAM accounting</div></article>
 <article class="card"><div class="label">Observed processes</div><div class="value" id="processCount">—</div><div class="unit">bounded procfs sample</div></article>
 <article class="card wide"><div class="label">AETHER policy assessment</div><div class="value" id="pressure">UNKNOWN</div><div class="unit" id="action">No verified policy handoff</div></article>
-<article class="card wide"><div class="label">Fail Safe Gate</div><div class="value" id="gateReason" style="font-size:14px;line-height:1.5">LMKD fallback retained</div><div class="unit">AETHER authority is not granted by this observer</div></article>
+<article class="card wide"><div class="label">Execution boundary</div><div class="value" id="gateReason" style="font-size:14px;line-height:1.5">Observe-only · no kernel writes</div><div class="unit">Reclaim proposals are not executed in this preview</div></article>
 </section>
 <section class="section card"><h2>Process observations</h2><div class="scroll"><table><thead><tr><th>PID</th><th>UID</th><th>Process</th><th>RSS</th><th>OOM adj</th><th>State</th></tr></thead><tbody id="processRows"><tr><td colspan="6" class="muted">Waiting for supervisor snapshot…</td></tr></tbody></table></div></section>
 <section class="section card"><h2>Event history</h2><div class="events" id="eventRows"><div class="muted">Waiting for events…</div></div></section>
-<div class="footer">Manager-hosted WebUI. No embedded HTTP service, network listener, or external browser is used. The manager bridge reads root-owned, read-only snapshots published by the Supervisor. AETHER currently observes and evaluates memory pressure; it does not modify LMKD, kill processes, or change kernel memory controls.</div>
+<div class="footer">Manager-hosted WebUI. No embedded HTTP service, network listener, or external browser is used. The manager bridge reads root-owned, read-only snapshots published by the Supervisor. AETHER Core v1 observes memory and creates bounded plans only; it does not write kernel controls, modify app budgets, freeze, or kill processes.</div>
 <div id="message" class="footer muted">Connecting to the KernelSU WebUI JavaScript bridge…</div>
 </main>
 <script>
@@ -59,11 +59,11 @@ async function readSnapshot(name){
 async function refresh(){
  try{
   const [s,m,p,e]=await Promise.all(["status","memory","processes","events"].map(readSnapshot));
-  el("authority").textContent=s.authority;el("gateReason").textContent=s.gate_reason;
+  el("authority").textContent=String(s.execution_mode||"observe_only").toUpperCase();el("gateReason").textContent="No reclaim executor or kernel writer is active";
   el("available").textContent=mib(m.available_kib);el("total").textContent=mib(m.total_kib);el("swap").textContent=mib(m.swap_free_kib);
   el("availablePct").textContent=m.valid&&m.total_kib?((100*m.available_kib/m.total_kib).toFixed(1)+"% available"):"source unavailable";
   el("processCount").textContent=p.count;el("pressure").textContent=String(s.pressure_level||"unknown").toUpperCase();
-  el("action").textContent="Policy classification: "+s.policy_action;
+  el("action").textContent="Core action: "+s.policy_action;
   const body=el("processRows");body.replaceChildren();
   (p.processes||[]).forEach(x=>{const tr=document.createElement("tr");[x.pid,x.uid??"—",x.name,mib(x.rss_kib),x.oom_score_adj??"—",x.state||"—"].forEach(v=>{const td=document.createElement("td");td.textContent=String(v);tr.appendChild(td);});body.appendChild(tr);});
   if(!(p.processes||[]).length){const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=6;td.textContent="No readable processes";td.className="muted";tr.appendChild(td);body.appendChild(tr);}
