@@ -1,62 +1,67 @@
 # AETHER architecture
 
-## Design objective
+## Non-negotiable authority model
+AETHER is the sole policy authority while healthy. It owns all memory-management
+policy decisions. The already-running Android LMKD process is the integration
+host and the emergency fallback only; it is not a parallel policy authority.
 
-AETHER is designed as a userspace policy engine for Android memory management.
-Its intended integration point is the already-running LMKD process. The project
-does not intend to ship a replacement daemon as its primary architecture.
+The Fail Safe Gate enforces mutually exclusive authority:
+1. **AETHER_ACTIVE** — AETHER has passed health and integrity checks and owns
+   policy decisions. The LMKD fallback path is held in reserve.
+2. **LMKD_FALLBACK** — AETHER is unavailable, unhealthy, or fails validation. The
+   gate relinquishes AETHER authority and allows preserved LMKD behavior to protect
+   the system.
+3. **TRANSITION** — authority is not established. No new AETHER intervention may
+   be issued until transition completes and is verified.
 
-The design separates policy from privileged integration. AETHER computes and
-validates decisions; a narrowly scoped runtime adapter is responsible for
-communicating with the target process and must reject unsupported states.
+The safe default is \`LMKD_FALLBACK\`. AETHER may become active only after positive
+runtime validation. A failed or ambiguous transition resolves to fallback.
+Foundation 0.2 specifies this contract but does not yet implement the in-process
+gate or alter LMKD behavior.
 
-## Logical components
+## Components
+### Supervisor
+Owns module lifecycle, configuration, health checks, diagnostics, local API, and
+future WebUI. It monitors the in-process Runtime Agent and coordinates recovery
+without becoming a second policy engine.
 
-### 1. Supervisor
+### Runtime Agent
+Lives inside the existing LMKD process. It is the boundary through which AETHER
+observes the target and later assumes policy authority. It validates target
+identity, hook results, protocol version, and health before the Fail Safe Gate
+grants AETHER authority.
 
-The external supervisor owns module lifecycle, configuration, health checks,
-diagnostics, and the future WebUI service. It starts and monitors the native
-runtime component and provides a recovery path.
+### Policy Core
+Consumes normalized memory, pressure, and process observations. It is independent
+of private LMKD structures and produces AETHER policy decisions, not suggestions
+to a still-active LMKD policy engine.
 
-### 2. Runtime agent
+### WebUI
+A local management surface communicating only with the Supervisor API. It cannot
+write procfs, kernel controls, or LMKD internals directly.
 
-The in-process agent is the planned integration boundary with the existing LMKD
-process. It will expose a versioned, minimal interface to the policy engine.
-No injection or hook implementation is included in Foundation 0.1.
+## Hooking strategy
+The first two candidate inline-hook backends are ShadowHook (preferred) and Dobby
+(secondary). The project will not load both against the same LMKD target. One
+backend is selected per runtime after capability and integrity checks. See
+\`HOOKING_EVALUATION.md\`.
 
-### 3. Policy core
+No target symbol, offset, private structure layout, or hook point is assumed
+universal. AArch64 support does not imply binary compatibility across Android
+builds. Unsupported or ambiguous targets remain in fallback mode.
 
-The native policy core consumes normalized process and memory-pressure observations.
-It produces policy decisions without depending directly on private LMKD structures.
-This separation allows the decision logic to be unit-tested independently.
+## Safety invariants
+- Observe and validate before granting AETHER policy authority.
+- Fail closed to LMKD fallback on missing symbols, unknown layouts, failed hooks,
+  integrity errors, watchdog timeout, or protocol mismatch.
+- Never allow two policy authorities to act simultaneously.
+- Do not make blind writes to private process or kernel state.
+- Keep a watchdog, kill switch, bounded event queue, and auditable transition log.
+- Discover runtime capabilities; do not infer compatibility from OEM names.
 
-### 4. WebUI
-
-The WebUI is a future management surface. It must communicate with the supervisor
-through a documented local API; it must not write kernel or LMKD state directly.
-
-## Runtime safety invariants
-
-- **Observe before intervene:** initial runtime integration must support observation-only mode.
-- **Fail closed:** missing symbols, unknown layouts, invalid protocol versions, or failed
-  integrity checks disable intervention.
-- **No blind writes:** runtime changes require validated targets and explicit ownership.
-- **Recoverability:** the supervisor needs a kill switch, watchdog, and a way to return
-  the agent to a non-intervening state.
-- **Bounded impact:** policy decisions must be rate-limited and auditable.
-- **No OEM assumptions:** capabilities are discovered at runtime, not inferred from
-  manufacturer names or marketing version strings.
-
-## Compatibility boundary
-
-AArch64 is the only Android ABI targeted by this project. That does not make private
-LMKD implementation details stable. Binary layout, symbols, compiler options, SELinux
-policy, and daemon behavior can differ between Android releases and vendor builds.
-A single backend is the design goal, but activation must be based on runtime
-verification rather than a device profile or an assumed universal offset.
-
-## Current implementation
-
-Foundation 0.1 provides a small C++ lifecycle core and host-side tests. It does not
-yet collect Android memory metrics, enumerate processes, communicate with LMKD,
-inject code, or enforce memory policies.
+## Current implementation: Foundation 0.2
+The native core contains normalized observation data types and parsers for Linux
+\`/proc/meminfo\` and memory PSI lines. Process fields are optional because sources
+may expose different metrics. Host tests cover valid and malformed input. No
+Android procfs reader, process enumerator, LMKD Runtime Agent, hook installation,
+Fail Safe Gate, policy intervention, Supervisor service, or WebUI is implemented.

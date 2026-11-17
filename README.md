@@ -1,61 +1,38 @@
 # AETHER
 
-**AETHER** is an ARM64-first Android memory-management engine project.
+**AETHER** is an ARM64-only Android memory-management engine project. Its intended
+runtime integration is inside the already-running LMKD process, using a native
+Runtime Agent coordinated by an external Supervisor and managed through a WebUI.
 
-The long-term design places an AETHER policy engine alongside the existing Android
-Low Memory Killer Daemon (LMKD), with a native runtime agent, an external supervisor,
-and a management WebUI. AETHER is intended to make policy decisions; Android's
-existing memory-management mechanisms remain responsible for kernel-facing actions.
+## Authority model
+AETHER is the sole owner of memory-management policy decisions while healthy.
+LMKD is preserved only as the emergency fallback, controlled by the Fail Safe
+Gate. AETHER and LMKD must never act as simultaneous policy authorities. See
+[Architecture](docs/ARCHITECTURE.md).
 
-> **Development status:** Foundation 0.1. This repository currently contains the
-> initial native core and architecture contracts. It does not yet inject into,
-> hook, replace, or control a running LMKD process. Do not install this foundation
-> as a functional memory-management module.
+## Development status
+Foundation 0.2 adds normalized memory/process observation types and tested parsers
+for \`/proc/meminfo\` and memory PSI lines. It remains observation-only: it does not
+yet read Android procfs, enumerate live processes, integrate with LMKD, install
+hooks, implement the Fail Safe Gate, intervene in policy, or provide the
+Supervisor/WebUI runtime. Do not install it as a functioning memory-management
+module.
 
-## Project constraints
+## Fixed constraints
+- Android ABI: **AArch64 / arm64-v8a only**.
+- Native implementation: C++17, CMake, Android NDK.
+- Universal/OEM-independent design goal; runtime capability checks are mandatory.
+- Existing LMKD process is the integration host, not a replacement target.
+- AETHER owns policy decisions; LMKD is fallback only.
+- Fail closed to LMKD fallback on any uncertain runtime state.
 
-- Target architecture: **AArch64 / arm64-v8a only** for Android builds.
-- Native implementation: C++17.
-- Build system: CMake + Android NDK.
-- OEM-independent design goal; runtime capabilities must be detected and validated,
-  never assumed from a device brand or Android version.
-- Fail closed: unsupported or unverified runtime integration must not activate
-  intervention.
-
-## Repository layout
-
-- `native/` — native core and public C++ interfaces.
-- `docs/` — architecture, build instructions, and implementation roadmap.
-- `config/` — example configuration schema.
-- `module/` — initial packaging metadata only; not an installable engine yet.
-
-## Build the native foundation on a host
-
-```sh
+## Build and test
+\`\`\`sh
 cmake -S . -B build -DAETHER_BUILD_TESTS=ON
 cmake --build build --parallel
 ctest --test-dir build --output-on-failure
-```
+\`\`\`
 
-## Configure an Android ARM64 build
-
-```sh
-cmake -S . -B build-android \
-  -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK/build/cmake/android.toolchain.cmake" \
-  -DANDROID_ABI=arm64-v8a \
-  -DANDROID_PLATFORM=android-23 \
-  -DAETHER_BUILD_TESTS=OFF
-cmake --build build-android --parallel
-```
-
-The Android API level above is a build baseline, not a compatibility guarantee for
-private LMKD internals. Runtime integration requires separate device-side validation.
-
-## Current status
-
-See [Architecture](docs/ARCHITECTURE.md), [Build guide](docs/BUILDING.md), and
-[Roadmap](docs/ROADMAP.md).
-
-## License
-
-GNU General Public License v3.0. See [LICENSE](LICENSE).
+ShadowHook is the preferred hook candidate and Dobby is the secondary candidate.
+Neither is integrated yet; the exact LMKD binary and call paths must be audited.
+See [Hooking evaluation](docs/HOOKING_EVALUATION.md) and [WebUI design](docs/WEBUI_DESIGN.md).
