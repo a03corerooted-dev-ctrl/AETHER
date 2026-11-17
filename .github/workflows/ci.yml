@@ -14,11 +14,37 @@ jobs:
         run: cmake -S . -B build -DAETHER_BUILD_TESTS=ON -DAETHER_STRICT_WARNINGS=ON
       - name: Build
         run: cmake --build build --parallel
-      - name: Test
+      - name: Unit and runtime tests
         run: ctest --test-dir build --output-on-failure
-      - name: Smoke test
+      - name: Version smoke test
         run: ./build/native/aether-supervisor --version
-  android-arm64-cross-build:
+      - name: Live procfs smoke test
+        run: |
+          ./build/native/aether-supervisor --once > /tmp/aether-sample.jsonl
+          python3 - <<'PY'
+          import json
+          with open("/tmp/aether-sample.jsonl", encoding="utf-8") as stream:
+              status = json.loads(stream.readline())
+              memory = json.loads(stream.readline())
+          assert status["authority"] == "LMKD_FALLBACK"
+          assert "total_kib" in memory
+          print("Live procfs sample:", status["pressure_level"], memory["total_kib"], "KiB")
+          PY
+      - name: HTTP and WebUI smoke test
+        run: |
+          set -euo pipefail
+          ./build/native/aether-supervisor --web-root "$PWD/module/web" --port 18765 > /tmp/aether-supervisor.log 2>&1 &
+          AETHER_PID=$!
+          trap 'kill "$AETHER_PID" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:18765/api/v1/status > /tmp/aether-status.json; then break; fi
+            sleep 1
+          done
+          python3 -c 'import json; s=json.load(open("/tmp/aether-status.json")); assert s["authority"] == "LMKD_FALLBACK"'
+          curl -fsS http://127.0.0.1:18765/api/v1/memory | python3 -c 'import json,sys; assert "total_kib" in json.load(sys.stdin)'
+          curl -fsS http://127.0.0.1:18765/api/v1/processes | python3 -c 'import json,sys; assert "processes" in json.load(sys.stdin)'
+          curl -fsS http://127.0.0.1:18765/ | grep -q "AETHER"
+  android-arm64-module:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,7 +60,13 @@ jobs:
         run: yes | sdkmanager --sdk_root="$ANDROID_HOME" --licenses >/dev/null
       - name: Install NDK
         run: sdkmanager --sdk_root="$ANDROID_HOME" "ndk;27.2.12479018"
-      - name: Configure ARM64 build
-        run: cmake -S . -B build-android -DCMAKE_TOOLCHAIN_FILE="$ANDROID_HOME/ndk/27.2.12479018/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-23 -DAETHER_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release
-      - name: Build ARM64 supervisor
-        run: cmake --build build-android --parallel
+      - name: Build and package ARM64 module
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/27.2.12479018"
+          ./scripts/package-module.sh
+      - name: Upload ARM64 module artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AETHER-Serenity-0.9.0-arm64
+          path: dist/AETHER-Serenity-0.9.0-arm64.zip
+          if-no-files-found: error
