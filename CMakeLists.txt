@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(AETHER VERSION 0.9.0 DESCRIPTION "AETHER Android memory-management engine" LANGUAGES CXX)
+project(AETHER VERSION 0.9.2 DESCRIPTION "AETHER Android memory-management engine" LANGUAGES CXX)
 option(AETHER_BUILD_TESTS "Build host-side tests" ON)
 option(AETHER_STRICT_WARNINGS "Enable strict compiler warnings" ON)
 if(ANDROID)

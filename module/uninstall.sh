@@ -6,3 +6,4 @@ if [ -f "$PIDFILE" ]; then
   case "$PID" in ''|*[!0-9]*) ;; *) kill "$PID" 2>/dev/null ;; esac
   rm -f "$PIDFILE"
 fi
+rm -rf "$MODDIR/state"

@@ -1,8 +1,8 @@
 #include "aether/supervisor.hpp"
+#include "aether/version.hpp"
 #include <utility>
 #include <iomanip>
 #include <sstream>
-
 namespace aether {
 std::string json_escape(const std::string& value) {
     std::ostringstream out;
@@ -17,19 +17,14 @@ std::string json_escape(const std::string& value) {
             case '\r': out << "\\r"; break;
             case '\t': out << "\\t"; break;
             default:
-                if (c < 0x20U) {
-                    out << "\\u" << std::hex << std::setw(4) << std::setfill('0')
-                        << static_cast<unsigned>(c) << std::dec;
-                } else {
-                    out << static_cast<char>(c);
-                }
+                if (c < 0x20U) out << "\\u" << std::hex << std::setw(4) << std::setfill('0') << static_cast<unsigned>(c) << std::dec;
+                else out << static_cast<char>(c);
         }
     }
     return out.str();
 }
-
 Supervisor::Supervisor(std::string root) : reader_(std::move(root)), events_(256) {
-    events_.push("INFO", "supervisor", "Serenity 0.9 supervisor initialized; LMKD fallback retained");
+    events_.push("INFO", "supervisor", "Serenity 0.9.2 supervisor initialized; LMKD fallback retained");
 }
 void Supervisor::sample_once() {
     auto fresh = reader_.collect();
@@ -51,11 +46,10 @@ ObservationBatch Supervisor::observation() const { std::lock_guard<std::mutex> l
 PolicyDecision Supervisor::decision() const { std::lock_guard<std::mutex> lock(mutex_); return decision_; }
 GateSnapshot Supervisor::gate() const { return gate_.snapshot(); }
 std::vector<Event> Supervisor::events(std::size_t limit) const { return events_.snapshot(limit); }
-
 std::string Supervisor::status_json() const {
     const auto g=gate(); const auto d=decision(); const auto o=observation();
     std::ostringstream s;
-    s << "{\"version\":\"0.9.0-serenity\",\"authority\":\"" << to_string(g.state)
+    s << "{\"version\":\"" << kVersion << "\",\"authority\":\"" << to_string(g.state)
       << "\",\"gate_generation\":" << g.generation << ",\"gate_reason\":\"" << json_escape(g.reason)
       << "\",\"memory_valid\":" << (o.memory_valid?"true":"false") << ",\"process_count\":" << o.processes.size()
       << ",\"pressure_level\":\"" << to_string(d.level) << "\",\"policy_action\":\"" << to_string(d.action) << "\"}";
@@ -102,4 +96,4 @@ std::string Supervisor::events_json() const {
     }
     s << "]}"; return s.str();
 }
-} // namespace aether
+}

@@ -1,43 +1,44 @@
 # AETHER WebUI design
 
-The WebUI is a Supervisor client, not a privileged control surface. Serenity 0.9
-serves it from the Supervisor over a loopback-only, read-only HTTP API bound to
-127.0.0.1. The API is not authenticated yet; local applications on the same
-device may be able to access it. It must never bind to a wildcard or LAN address.
-Do not add mutating endpoints until authentication and Fail Safe Gate mediation
-are implemented.
+## Hosting contract
 
-## Primary views
-- **Overview:** authority (`AETHER_ACTIVE`, `LMKD_FALLBACK`, `TRANSITION`),
-  Runtime Agent health, Fail Safe Gate status, uptime, and last transition reason.
-- **Memory:** total, available, free, cached, swap, and memory PSI (`some`/`full`)
-  with timestamps and source-validity indicators.
-- **Processes:** PID, UID, name, RSS, `oom_score_adj`, and state; unavailable
-  fields are shown as unavailable, never fabricated.
-- **Policy timeline:** timestamped AETHER decisions, inputs, outcomes, and authority
-  state at the time.
-- **Diagnostics:** hook backend identity/version, capability checks, watchdog
-  events, rejected targets, and bounded diagnostic export.
-- **Configuration:** observation mode, sampling interval, logging level, activation
-  status. Policy controls stay disabled until Fail Safe Gate validation.
+AETHER's UI is a static module WebUI. Its entry point is webroot/index.html at
+the module root. A compatible manager loads that directory inside its own
+WebView. AETHER MUST NOT create an HTTP server, TCP/Unix listener, localhost
+endpoint, embedded browser, or external host process.
 
-## Implemented endpoints in Serenity 0.9
-- `GET /` — dashboard HTML.
-- `GET /api/v1/status`
-- `GET /api/v1/memory`
-- `GET /api/v1/processes`
-- `GET /api/v1/events`
+KernelSU and KernelSU Next expose the ksu JavaScript bridge to module WebUI
+pages. AETHER uses the documented ksu.exec(command, options, callback) form
+to read fixed-path JSON snapshots. No page-controlled command fragments are
+interpolated into the shell command.
 
-All API requests are GET-only. Other methods return 405. Diagnostics and
-configuration endpoints are future work; no configuration mutation is exposed.
+Magisk's documented module interaction is action.sh, displayed as an Action
+button in the Magisk app. Magisk does not provide the same integrated module
+WebView host/API. The AETHER Magisk action therefore prints one-shot
+diagnostics in the manager console; it is not presented as a WebUI.
 
-## Visual hierarchy
-Authority state is the most prominent status element. Memory/pressure metrics are
-second. Process details and event history are subordinate. Show clear units,
-data age, and distinguish measured values from unavailable/inferred values.
+## Data path
 
-## Future security requirements
-Before the WebUI exposes policy-affecting controls, the Supervisor must add
-per-install authentication, request validation, rate limits, and mandatory
-Fail Safe Gate mediation. The WebUI must never write procfs, kernel controls,
-or LMKD internals directly.
+1. The Supervisor samples procfs and evaluates the read-only pressure classifier.
+2. It atomically publishes status.json, memory.json, processes.json, and
+   events.json under /data/adb/modules/aether/state/.
+3. The manager WebView calls ksu.exec to read those fixed files.
+4. The UI parses and renders the snapshots; it does not connect to a network endpoint.
+
+Snapshot files are replaced by rename after a complete write so the WebView
+does not observe partially written JSON. The state directory is root-owned and
+mode 0750; snapshot files are mode 0640. Manager bridge execution is privileged.
+
+## Views
+
+- Overview: authority, Fail Safe Gate status, memory and pressure.
+- Memory: total, available, free, cached, swap, PSI and validity.
+- Processes: PID, UID, name, RSS, oom_score_adj, and state.
+- Event history: bounded diagnostic events.
+
+## Security boundary
+
+The WebUI is currently read-only. It must never write procfs, kernel controls,
+LMKD internals, or policy configuration. Future mutating controls require
+explicit authorization, strict input validation, rate limits, and mandatory
+Fail Safe Gate mediation. No localhost HTTP service is permitted as a fallback.

@@ -1,19 +1,14 @@
-# Serenity 0.9.1 — installer hotfix
+# Serenity 0.9.2 — manager-hosted WebUI migration
 
-This hotfix corrects the module installer permission sequence. The prior
-customize.sh recursively assigned mode 0644 to every file, which removed the
-execute bit from system/bin/aether-supervisor. The service then rejected the
-binary with its -x check and exited before starting the local HTTP server.
+Serenity 0.9.2 removes the embedded HTTP server and all loopback networking.
+The WebUI now follows the KernelSU module layout: static assets live under
+webroot/ with index.html as the entry point. KernelSU and KernelSU Next host
+that page in their Manager WebView and expose the ksu JavaScript bridge.
 
-The installer now restores executable mode 0755 to the supervisor after the
-recursive permission pass, verifies that it is executable, and aborts if the
-WebUI file is missing.
+The Supervisor publishes four complete JSON snapshots using temporary files
+and atomic rename. The WebUI reads those fixed files through the manager bridge.
+Magisk receives action.sh for one-shot diagnostics because its documented
+module interface is an Action button/console, not an integrated module WebUI.
 
-All Serenity 0.9 observation/supervisor limitations remain unchanged:
-- Read-only procfs and PSI observation.
-- Read-only loopback HTTP API and static WebUI.
-- No in-process LMKD Runtime Agent.
-- No active LMKD hooks; ShadowHook and Dobby remain evaluated candidates only.
-- No takeover or policy handoff on-device.
-
-This is an installer hotfix, not an LMKD integration release.
+This migration changes only UI hosting and telemetry transport. It does not
+implement the LMKD Runtime Agent, hooks, or policy-authority handoff.

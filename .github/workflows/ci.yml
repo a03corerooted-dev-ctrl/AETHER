@@ -16,36 +16,50 @@ jobs:
         run: cmake --build build --parallel
       - name: Unit and runtime tests
         run: ctest --test-dir build --output-on-failure
-      - name: Installer permission regression check
-        run: grep -F 'set_perm "$MODPATH/system/bin/aether-supervisor" 0 0 0755' module/customize.sh
       - name: Version smoke test
-        run: ./build/native/aether-supervisor --version
-      - name: Live procfs smoke test
+        run: test "$(./build/native/aether-supervisor --version)" = "0.9.2-webroot"
+      - name: Live procfs and snapshot smoke test
         run: |
+          set -euo pipefail
           ./build/native/aether-supervisor --once > /tmp/aether-sample.jsonl
           python3 - <<'PY'
           import json
           with open("/tmp/aether-sample.jsonl", encoding="utf-8") as stream:
-              status = json.loads(stream.readline())
-              memory = json.loads(stream.readline())
-          assert status["authority"] == "LMKD_FALLBACK"
-          assert "total_kib" in memory
-          print("Live procfs sample:", status["pressure_level"], memory["total_kib"], "KiB")
+              rows = [json.loads(line) for line in stream]
+          assert len(rows) == 4
+          assert rows[0]["authority"] == "LMKD_FALLBACK"
+          assert "total_kib" in rows[1]
+          assert "processes" in rows[2]
+          assert "events" in rows[3]
           PY
-      - name: HTTP and WebUI smoke test
-        run: |
-          set -euo pipefail
-          ./build/native/aether-supervisor --web-root "$PWD/module/web" --port 18765 > /tmp/aether-supervisor.log 2>&1 &
+          ./build/native/aether-supervisor --state-dir /tmp/aether-state --interval-ms 100 &
           AETHER_PID=$!
           trap 'kill "$AETHER_PID" 2>/dev/null || true' EXIT
           for attempt in $(seq 1 20); do
-            if curl -fsS http://127.0.0.1:18765/api/v1/status > /tmp/aether-status.json; then break; fi
-            sleep 1
+            test -s /tmp/aether-state/status.json && break
+            sleep 0.2
           done
-          python3 -c 'import json; s=json.load(open("/tmp/aether-status.json")); assert s["authority"] == "LMKD_FALLBACK"'
-          curl -fsS http://127.0.0.1:18765/api/v1/memory | python3 -c 'import json,sys; assert "total_kib" in json.load(sys.stdin)'
-          curl -fsS http://127.0.0.1:18765/api/v1/processes | python3 -c 'import json,sys; assert "processes" in json.load(sys.stdin)'
-          curl -fsS http://127.0.0.1:18765/ | grep -q "AETHER"
+          python3 - <<'PY'
+          import json, pathlib
+          root = pathlib.Path("/tmp/aether-state")
+          expected = {"status.json", "memory.json", "processes.json", "events.json"}
+          assert expected.issubset({p.name for p in root.iterdir()})
+          for name in expected:
+              json.loads((root / name).read_text())
+          assert json.loads((root / "status.json").read_text())["authority"] == "LMKD_FALLBACK"
+          PY
+      - name: WebUI architecture regression checks
+        run: |
+          set -euo pipefail
+          test -f module/webroot/index.html
+          ! test -e module/web/index.html
+          ! test -e native/src/http_server.cpp
+          ! test -e native/include/aether/http_server.hpp
+          ! grep -R -nE '127\.0\.0\.1|localhost|fetch\(|--port|HttpServer' module native CMakeLists.txt
+          grep -q 'window.ksu' module/webroot/index.html
+          grep -q 'ksu.exec' module/webroot/index.html
+          grep -q 'webroot/index.html' scripts/package-module.sh
+          grep -q 'action.sh' module/customize.sh
   android-arm64-module:
     runs-on: ubuntu-latest
     steps:
@@ -69,6 +83,6 @@ jobs:
       - name: Upload ARM64 module artifact
         uses: actions/upload-artifact@v4
         with:
-          name: AETHER-Serenity-0.9.1-arm64
-          path: dist/AETHER-Serenity-0.9.1-arm64.zip
+          name: AETHER-Serenity-0.9.2-arm64
+          path: dist/AETHER-Serenity-0.9.2-arm64.zip
           if-no-files-found: error
