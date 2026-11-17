@@ -15,11 +15,6 @@ std::uint64_t monotonic_ns() {
     const auto now=std::chrono::steady_clock::now().time_since_epoch();
     return static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(now).count());
 }
-bool parse_u64(std::string_view s,std::uint64_t& out) {
-    if(s.empty()) return false;
-    const auto result=std::from_chars(s.data(),s.data()+s.size(),out);
-    return result.ec==std::errc{} && result.ptr==s.data()+s.size();
-}
 std::string trim(std::string value) {
     const auto first=value.find_first_not_of(" \t\r\n");
     if(first==std::string::npos) return {};
