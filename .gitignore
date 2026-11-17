@@ -1,0 +1,22 @@
+# CMake
+/build/
+/build-*/
+/CMakeFiles/
+/CMakeCache.txt
+/cmake_install.cmake
+/CTestTestfile.cmake
+/Makefile
+/compile_commands.json
+
+# Native build artifacts
+*.o
+*.a
+*.so
+*.elf
+*.bin
+
+# IDE
+.idea/
+.vscode/
+*.swp
+.DS_Store

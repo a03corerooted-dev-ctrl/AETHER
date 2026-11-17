@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "engine": {
+    "mode": "observe",
+    "enabled": false
+  },
+  "runtime": {
+    "integration": "disabled",
+    "require_integrity_check": true
+  },
+  "diagnostics": {
+    "log_level": "info",
+    "event_history_limit": 512
+  }
+}

@@ -1,0 +1,6 @@
+id=aether
+name=AETHER
+version=0.1.0-foundation
+versionCode=1
+author=a03corerooted-dev-ctrl
+description=Foundation source package only; runtime integration is not implemented.
