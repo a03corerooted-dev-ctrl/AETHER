@@ -42,11 +42,13 @@ Signals collect_signals(const ObservationBatch& observation) {
         signals.valid = true;
     }
 
-    if (observation.pressure.some.has_value()) {
+    if (observation.pressure.some.has_value() &&
+        finite_between(observation.pressure.some->avg10, 0.0, 100.0)) {
         signals.psi_some = observation.pressure.some->avg10;
         signals.valid = true;
     }
-    if (observation.pressure.full.has_value()) {
+    if (observation.pressure.full.has_value() &&
+        finite_between(observation.pressure.full->avg10, 0.0, 100.0)) {
         signals.psi_full = observation.pressure.full->avg10;
         signals.valid = true;
     }
@@ -141,10 +143,12 @@ CoreDecision CoreEngine::evaluate(const ObservationBatch& observation,
     decision.sequence = sequence_;
 
     if (!config_valid_) {
+        recovery_samples_seen_ = 0U;
         decision.reason = "invalid CoreConfig; policy evaluation disabled";
         return decision;
     }
     if (observation_is_stale(observation, context, config_)) {
+        recovery_samples_seen_ = 0U;
         decision.reason = "observation is stale or has an invalid monotonic timestamp";
         return decision;
     }
@@ -154,6 +158,7 @@ CoreDecision CoreEngine::evaluate(const ObservationBatch& observation,
     decision.psi_some_avg10 = signals.psi_some;
     decision.psi_full_avg10 = signals.psi_full;
     if (!signals.valid) {
+        recovery_samples_seen_ = 0U;
         decision.reason = "no valid MemAvailable ratio or memory PSI signal";
         return decision;
     }

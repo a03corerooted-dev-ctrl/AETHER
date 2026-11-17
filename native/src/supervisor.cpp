@@ -1,5 +1,6 @@
 #include "aether/supervisor.hpp"
 #include "aether/version.hpp"
+#include <chrono>
 #include <utility>
 #include <iomanip>
 #include <sstream>
@@ -28,7 +29,11 @@ Supervisor::Supervisor(std::string root) : reader_(std::move(root)), gate_(), ev
 }
 void Supervisor::sample_once() {
     auto fresh = reader_.collect();
-    auto next_decision = core_.evaluate(fresh);
+    const auto now = std::chrono::steady_clock::now().time_since_epoch();
+    CoreContext context{};
+    context.now_ns = static_cast<std::uint64_t>(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(now).count());
+    auto next_decision = core_.evaluate(fresh, context);
     const bool memory_valid = fresh.memory_valid;
     {
         std::lock_guard<std::mutex> lock(mutex_);

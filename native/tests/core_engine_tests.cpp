@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <limits>
 
 namespace {
 aether::ObservationBatch sample(std::uint64_t total_kib,
