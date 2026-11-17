@@ -1,6 +1,6 @@
 id=aether
-name=AETHER
-version=0.1.0-foundation
-versionCode=1
+name=AETHER Serenity
+version=0.9.0-serenity
+versionCode=90
 author=a03corerooted-dev-ctrl
-description=Foundation source package only; runtime integration is not implemented.
+description=Developer preview: read-only Android memory observer and local dashboard. LMKD takeover remains disabled.

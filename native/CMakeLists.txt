@@ -1,6 +1,10 @@
-add_library(aether_core STATIC src/engine.cpp src/observation.cpp)
+add_library(aether_core STATIC
+  src/engine.cpp src/observation.cpp src/procfs_reader.cpp
+  src/policy.cpp src/failsafe_gate.cpp src/event_log.cpp src/supervisor.cpp
+)
 target_include_directories(aether_core PUBLIC include)
 target_compile_features(aether_core PUBLIC cxx_std_17)
+target_link_libraries(aether_core PUBLIC Threads::Threads)
 if(AETHER_STRICT_WARNINGS)
   if(MSVC)
     target_compile_options(aether_core PRIVATE /W4 /WX)
@@ -9,3 +13,6 @@ if(AETHER_STRICT_WARNINGS)
   endif()
 endif()
 set_target_properties(aether_core PROPERTIES POSITION_INDEPENDENT_CODE ON OUTPUT_NAME "aether_core")
+add_executable(aether-supervisor src/main.cpp src/http_server.cpp)
+target_link_libraries(aether-supervisor PRIVATE aether_core Threads::Threads)
+target_compile_features(aether-supervisor PRIVATE cxx_std_17)

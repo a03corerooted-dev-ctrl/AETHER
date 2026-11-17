@@ -1,15 +1,41 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "engine": {
     "mode": "observe",
-    "enabled": false
+    "enabled": true,
+    "policy_authority": "aether_when_runtime_agent_verified"
   },
-  "runtime": {
-    "integration": "disabled",
-    "require_integrity_check": true
+  "supervisor": {
+    "bind_address": "127.0.0.1",
+    "port": 8765,
+    "sampling_interval_ms": 1000,
+    "max_process_observations": 128
+  },
+  "failsafe_gate": {
+    "default_authority": "LMKD_FALLBACK",
+    "heartbeat_timeout_ms": 3000,
+    "require_agent": true,
+    "require_integrity": true,
+    "require_policy_ready": true,
+    "require_hook_backend": true,
+    "require_watchdog": true
+  },
+  "hooks": {
+    "primary": "ShadowHook",
+    "secondary": "Dobby",
+    "enabled": false,
+    "require_target_evidence": true
+  },
+  "policy": {
+    "available_ratio_warning": 0.12,
+    "available_ratio_critical": 0.05,
+    "psi_some_avg10_warning": 2.0,
+    "psi_some_avg10_critical": 10.0,
+    "psi_full_avg10_warning": 1.0,
+    "psi_full_avg10_critical": 5.0
   },
   "diagnostics": {
     "log_level": "info",
-    "event_history_limit": 512
+    "event_history_limit": 256
   }
 }

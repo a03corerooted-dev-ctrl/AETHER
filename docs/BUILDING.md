@@ -1,41 +1,39 @@
-# Building AETHER
+# Building AETHER Serenity 0.9
 
-## Requirements
+## Host build and test
 
-- CMake 3.22 or newer.
-- A C++17 compiler for host-side development.
-- Android NDK with CMake toolchain support for Android ARM64 builds.
-
-## Host build and tests
+Requirements: CMake 3.22+, C++17 compiler, and POSIX-compatible host for the
+HTTP server and procfs fixture tests.
 
 ```sh
-cmake -S . -B build -DAETHER_BUILD_TESTS=ON
-cmake --build build --parallel
-ctest --test-dir build --output-on-failure
+./scripts/test-host.sh
 ```
 
-The host build exists to test policy-independent native code. It is not an Android
-module and must not be installed on a device.
+The host binary reads the host's `/proc` by default. A deterministic fixture can
+be supplied with `--proc-root PATH`; `--once` prints a single status and memory
+sample and exits. `--version` prints the version string.
 
 ## Android ARM64 cross-build
 
-Linux/macOS shell example:
+Install Android NDK r27.2 or compatible and set `ANDROID_NDK_HOME`.
 
 ```sh
-cmake -S . -B build-android \
-  -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK/build/cmake/android.toolchain.cmake" \
-  -DANDROID_ABI=arm64-v8a \
-  -DANDROID_PLATFORM=android-23 \
-  -DAETHER_BUILD_TESTS=OFF
-cmake --build build-android --parallel
+./scripts/package-module.sh
 ```
 
-The build system rejects Android ABIs other than `arm64-v8a`. The selected API
-level is only a compilation baseline; it does not certify compatibility with
-private system services on a device.
+The script cross-compiles `aether-supervisor` for `arm64-v8a`, stages the
+Magisk/KernelSU-style module tree, and creates
+`dist/AETHER-Serenity-0.9.0-arm64.zip`.
 
-## Build validation still required
+## Runtime
 
-Before a device build can be called supported, CI and device testing must verify:
-compiler/toolchain versions, linker output, Android runtime loading, SELinux
-constraints, and the exact integration contract available on the target build.
+The module service waits for Android boot completion, then starts the read-only
+observer. The HTTP server binds exclusively to `127.0.0.1:8765`. The WebUI is
+served at the local root path; JSON endpoints are under `/api/v1/`.
+
+## Hard boundary
+
+This is not an LMKD takeover build. It does not install ShadowHook or Dobby,
+inject into LMKD, alter LMKD policy, kill processes, or write kernel memory
+controls. LMKD remains unmodified and in service. A production takeover requires
+an audited in-process Runtime Agent and device-tested Fail Safe Gate handoff.

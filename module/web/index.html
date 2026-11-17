@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><title>AETHER · Serenity 0.9</title>
+<style>
+:root{font-family:Inter,system-ui,sans-serif;color:#e8edf5;background:#0b1018;--panel:#131c28;--line:#263446;--muted:#91a0b4;--accent:#8ac7ff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 85% -20%,#1c3650 0,transparent 42%),#0b1018}
+main{max-width:1180px;margin:auto;padding:28px 18px 56px}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:26px}
+.brand{font-size:22px;font-weight:750;letter-spacing:.13em}.sub{color:var(--muted);font-size:12px;margin-top:4px}
+.pill{border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-size:12px;color:#ffd28a;background:#302718}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.card{background:linear-gradient(145deg,#172231,#111925);border:1px solid var(--line);border-radius:15px;padding:16px;min-width:0}
+.label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.value{font-size:25px;font-weight:700;margin-top:9px;overflow-wrap:anywhere}.unit{font-size:12px;color:var(--muted);font-weight:500}
+.section{margin-top:16px}.section h2{font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:#b8c6d8;margin:0 0 10px}
+.wide{grid-column:span 2}.status{display:flex;align-items:center;gap:10px}.dot{width:9px;height:9px;border-radius:50%;background:#e5ad56;box-shadow:0 0 14px #e5ad5666}
+table{width:100%;border-collapse:collapse;font-size:12px}th{text-align:left;color:var(--muted);font-weight:500;padding:10px 8px;border-bottom:1px solid var(--line)}td{padding:10px 8px;border-bottom:1px solid #202d3d;overflow-wrap:anywhere}
+tbody tr:last-child td{border:0}.scroll{overflow:auto;max-height:330px}.events{display:grid;gap:8px}.event{display:grid;grid-template-columns:82px 64px 1fr;gap:9px;font-size:12px;color:#c4d0df}.muted{color:var(--muted)}.footer{margin-top:20px;color:var(--muted);font-size:11px;line-height:1.6}
+@media(max-width:760px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.wide{grid-column:span 2}.top{align-items:flex-start;flex-direction:column}.event{grid-template-columns:68px 52px 1fr}}
+</style></head><body><main>
+<header class="top"><div><div class="brand">AETHER <span style="color:var(--accent)">/</span> SERENITY</div><div class="sub">Native memory observer · version 0.9.0</div></div><div class="pill status"><span class="dot"></span><span id="authority">LMKD_FALLBACK</span></div></header>
+<section class="grid">
+<article class="card"><div class="label">Memory available</div><div class="value" id="available">—</div><div class="unit" id="availablePct">waiting for sample</div></article>
+<article class="card"><div class="label">Total RAM</div><div class="value" id="total">—</div><div class="unit">physical memory reported by procfs</div></article>
+<article class="card"><div class="label">Swap free</div><div class="value" id="swap">—</div><div class="unit">swap / zRAM accounting</div></article>
+<article class="card"><div class="label">Observed processes</div><div class="value" id="processCount">—</div><div class="unit">bounded procfs sample</div></article>
+<article class="card wide"><div class="label">AETHER policy assessment</div><div class="value" id="pressure">UNKNOWN</div><div class="unit" id="action">No verified policy handoff</div></article>
+<article class="card wide"><div class="label">Fail Safe Gate</div><div class="value" id="gateReason" style="font-size:14px;line-height:1.5">LMKD fallback retained</div><div class="unit">AETHER authority is not granted by this observer</div></article>
+</section>
+<section class="section card"><h2>Process observations</h2><div class="scroll"><table><thead><tr><th>PID</th><th>UID</th><th>Process</th><th>RSS</th><th>OOM adj</th><th>State</th></tr></thead><tbody id="processRows"><tr><td colspan="6" class="muted">Waiting for procfs…</td></tr></tbody></table></div></section>
+<section class="section card"><h2>Event history</h2><div class="events" id="eventRows"><div class="muted">Waiting for events…</div></div></section>
+<div class="footer">Local-only dashboard. AETHER currently observes and evaluates memory pressure; it does not modify LMKD, kill processes, or change kernel memory controls. Runtime Agent validation is required before AETHER can become the active policy authority.</div>
+</main>
+<script>
+const el=id=>document.getElementById(id);
+const mib=k=>k==null?"—":(Number(k)/1024).toFixed(0)+" MiB";
+async function get(path){const r=await fetch(path,{cache:"no-store"});if(!r.ok)throw new Error(path+" "+r.status);return r.json();}
+async function refresh(){
+ try{
+  const [s,m,p,e]=await Promise.all([get("/api/v1/status"),get("/api/v1/memory"),get("/api/v1/processes"),get("/api/v1/events")]);
+  el("authority").textContent=s.authority;el("gateReason").textContent=s.gate_reason;
+  el("available").textContent=mib(m.available_kib);el("total").textContent=mib(m.total_kib);el("swap").textContent=mib(m.swap_free_kib);
+  el("availablePct").textContent=m.valid&&m.total_kib?((100*m.available_kib/m.total_kib).toFixed(1)+"% available"):"source unavailable";
+  el("processCount").textContent=p.count;el("pressure").textContent=s.pressure_level.toUpperCase();el("action").textContent="Policy classification: "+s.policy_action;
+  const body=el("processRows");body.replaceChildren();
+  p.processes.forEach(x=>{const tr=document.createElement("tr");[x.pid,x.uid??"—",x.name,mib(x.rss_kib),x.oom_score_adj??"—",x.state||"—"].forEach(v=>{const td=document.createElement("td");td.textContent=String(v);tr.appendChild(td);});body.appendChild(tr);});
+  if(!p.processes.length){const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=6;td.textContent="No readable processes";td.className="muted";tr.appendChild(td);body.appendChild(tr);}
+  const eventBox=el("eventRows");eventBox.replaceChildren();
+  e.events.slice().reverse().forEach(x=>{const row=document.createElement("div");row.className="event";const time=document.createElement("span"),level=document.createElement("strong"),msg=document.createElement("span");time.className="muted";time.textContent=new Date(x.timestamp_ms).toLocaleTimeString();level.textContent=x.level;msg.textContent=x.category+": "+x.message;row.append(time,level,msg);eventBox.appendChild(row);});
+ }catch(err){el("gateReason").textContent="Supervisor API unavailable: "+err.message;}
+}
+refresh();setInterval(refresh,2000);
+</script></body></html>
