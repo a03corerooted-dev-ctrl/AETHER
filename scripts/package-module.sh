@@ -9,7 +9,7 @@ if [[ -z "$NDK" || ! -f "$NDK/build/cmake/android.toolchain.cmake" ]]; then
 fi
 BUILD="$ROOT/build-android"
 STAGE="$ROOT/build/module-stage"
-OUT="$ROOT/dist/AETHER-Serenity-0.9.0-arm64.zip"
+OUT="$ROOT/dist/AETHER-Serenity-0.9.1-arm64.zip"
 cmake -S "$ROOT" -B "$BUILD" -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-23 -DAETHER_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release
 cmake --build "$BUILD" --parallel
 rm -rf "$STAGE" "$ROOT/dist"

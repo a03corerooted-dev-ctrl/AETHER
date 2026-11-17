@@ -1,6 +1,6 @@
 # AETHER
 
-**AETHER Serenity 0.9** is an ARM64 Android memory-management engine developer
+**AETHER Serenity 0.9.1** is an ARM64 Android memory-management engine developer
 preview. Its target architecture remains an in-process Runtime Agent inside the
 already-running LMKD process, coordinated by an external Supervisor and WebUI.
 
@@ -9,7 +9,7 @@ AETHER is the sole memory-policy authority while the Runtime Agent is healthy.
 LMKD is preserved only as the emergency fallback through the Fail Safe Gate.
 The two must never act as simultaneous policy authorities.
 
-## What Serenity 0.9 contains
+## What Serenity 0.9.1 contains
 - C++17 native procfs observer for memory, PSI, and bounded process metadata.
 - Deterministic pressure classifier and tested Fail Safe Gate state machine.
 - Thread-safe bounded event history.
@@ -35,7 +35,7 @@ Set ANDROID_NDK_HOME to an installed Android NDK, then run:
 ```sh
 ./scripts/package-module.sh
 ```
-The archive is written to dist/AETHER-Serenity-0.9.0-arm64.zip. Device installation
+The archive is written to dist/AETHER-Serenity-0.9.1-arm64.zip. Device installation
 and operation still require dedicated testing.
 
 See docs/SERENITY_09.md, docs/ARCHITECTURE.md, docs/HOOKING_EVALUATION.md, and

@@ -1,6 +1,6 @@
 id=aether
 name=AETHER Serenity
-version=0.9.0-serenity
-versionCode=90
+version=0.9.1-installer-hotfix
+versionCode=91
 author=a03corerooted-dev-ctrl
 description=Developer preview: read-only Android memory observer and local dashboard. LMKD takeover remains disabled.

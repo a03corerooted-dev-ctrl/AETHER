@@ -1,4 +1,4 @@
-# Building AETHER Serenity 0.9
+# Building AETHER Serenity 0.9.1
 
 ## Host build and test
 
@@ -23,7 +23,7 @@ Install Android NDK r27.2 or compatible and set `ANDROID_NDK_HOME`.
 
 The script cross-compiles `aether-supervisor` for `arm64-v8a`, stages the
 Magisk/KernelSU-style module tree, and creates
-`dist/AETHER-Serenity-0.9.0-arm64.zip`.
+`dist/AETHER-Serenity-0.9.1-arm64.zip`.
 
 ## Runtime
 
